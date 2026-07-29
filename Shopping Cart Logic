@@ -1,0 +1,57 @@
+// Add product to cart
+function addToCart(product) {
+  let cart = JSON.parse(localStorage.getItem('cart')) || [];
+  const existingIndex = cart.findIndex(item => item.id === product.id);
+
+  if (existingIndex > -1) {
+    cart[existingIndex].quantity += 1;
+  } else {
+    cart.push({ ...product, quantity: 1 });
+  }
+
+  localStorage.setItem('cart', JSON.stringify(cart));
+  alert(`${product.name} added to cart!`);
+}
+
+// Get total cart price
+function getCartTotal() {
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+  return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+}
+
+// Submit Order to Backend
+async function processCheckout() {
+  const token = localStorage.getItem('token');
+  const cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+  if (!token) {
+    alert('Please log in to complete your order.');
+    window.location.href = '/login.html';
+    return;
+  }
+
+  if (cart.length === 0) {
+    alert('Your cart is empty.');
+    return;
+  }
+
+  const response = await fetch('/api/orders', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      total_amount: getCartTotal(),
+      items: cart
+    })
+  });
+
+  if (response.ok) {
+    localStorage.removeItem('cart');
+    alert('Order placed successfully!');
+    window.location.href = '/index.html';
+  } else {
+    alert('Failed to place order.');
+  }
+}
